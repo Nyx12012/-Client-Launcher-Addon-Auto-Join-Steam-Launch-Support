@@ -1,5 +1,7 @@
 import ctypes
+import os
 import re
+import subprocess
 import sys
 import tkinter as tk
 from tkinter import messagebox, simpledialog
@@ -38,6 +40,8 @@ def parse_args(args):
             return target, problem, hide
     if "--join-last" in lowered:
         return "last", None, hide
+    if "--home" in lowered:
+        return "home", None, hide
     return None, None, hide
 
 
@@ -184,7 +188,42 @@ def _schedule_join(app):
         app.after(JOIN_DELAY_MS, lambda: _join(app, TARGET))
 
 
+def _open_menu(app):
+    from client.core.auth import build_tokens, _headless_user_id
+    from client.core.config import PLATFORM_DISPLAY_TO_BACKEND, USERNAME_MAX_LEN, _is_valid_username
+    exe = app.v_exe.get().strip()
+    username = app.v_username.get().strip()
+    if not exe or not os.path.isfile(exe):
+        messagebox.showerror("Not found", "Could not find the game.\n"
+                             "Please browse to 'A Township Tale.exe'.", parent=app)
+        return
+    if not username or len(username) > USERNAME_MAX_LEN or not _is_valid_username(username):
+        messagebox.showerror("Missing name", "Please enter a valid username before "
+                             "launching the main menu.", parent=app)
+        return
+    platform = app.v_platform.get()
+    platform = PLATFORM_DISPLAY_TO_BACKEND.get(platform, platform)
+    access, refresh, identity = build_tokens(_headless_user_id(username), username, "")
+    args = [exe, "/force_offline", "/access_token", access, "/refresh_token", refresh,
+            "/identity_token", identity]
+    if platform in ("none", "fly", ""):
+        args.append("/fly")
+    else:
+        args += ["/vrmode", platform]
+    if app.v_debug_helper.get():
+        args.append("/debug_helper")
+    _log(app, "opening the main menu", "warn")
+    try:
+        process = subprocess.Popen(args, cwd=os.path.dirname(exe), **app._popen_console_kwargs())
+        app._print("Game running (PID %d)" % process.pid, "ok")
+    except Exception as error:
+        _log(app, "couldn't start the game: %s" % error, "err")
+
+
 def _join(app, target):
+    if target == "home":
+        _open_menu(app)
+        return
     if target != "last":
         host, port = target
         app.v_ip.set(host)

@@ -16,7 +16,10 @@ in the way.
 | --- | --- |
 | `--join-last` | Joins the server selected in the launcher (the last one you picked or joined). |
 | `--join host:port` | Joins that server. The port is optional and defaults to 1757. |
-| `--hide` | Keeps the launcher window hidden while it joins. Use it with `--join` or `--join-last`. |
+| `--home` | Starts the game in its main menu instead of joining a server. |
+| `--hide` | Keeps the launcher window hidden. Use it with `--join`, `--join-last` or `--home`. |
+
+For a Steam entry that opens the game's main menu, use `--home --hide` as the Launch Options.
 
 ## Steam setup
 
